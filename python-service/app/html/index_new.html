@@ -1,0 +1,203 @@
+<html>
+
+<head>
+  <title>demo chatbot</title>
+  <style>
+    @font-face {
+      font-family: kll;
+      src: url(css/rounded-l-mplus-1c-regular.ttf);
+    }
+
+    body {
+      background: #2fd8cd  ;
+    }
+
+    div.log {
+      position: absolute;
+      top: 0;
+      width: 90vw;
+      height: auto;
+      left: 5vw;
+      /* background: #EEE; */
+      overflow-y: auto;
+      overflow-x: hidden;
+
+    }
+
+    div.chat_log {
+      position: relative;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      width: 60%;
+      height: auto;
+      padding-top: 5px;
+      padding-bottom: 5px;
+      padding-left: 20px;
+      padding-right: 20px;
+      /* border: 3px solid #73AD21; */
+      font-family: kll;
+
+      background: #444;
+      color: #FFF;
+      border-radius: 15px;
+    }
+
+    p {
+      font-size: 20pt;
+      line-height: 5pt;
+    }
+
+    div.cl_left {
+      float: left;
+      margin-left: 25px;
+      /* background: #CCE; */
+    }
+
+    div.cl_right {
+      float: right;
+      margin-right: 25px;
+      /* background: #EEE; */
+    }
+
+    div.cl_poll {
+      width: 100%;
+      /* position: relative; */
+      float: left;
+      height: auto;
+      border: none;
+      border-radius: 0px;
+      display: flex;
+      flex-flow: row wrap;
+      padding-left: 0px;
+      padding-right: 0px;
+
+      background: #DDD;
+      color: #333;
+      border-radius: 13px;
+    }
+
+    div.cl_poll>div.cl_title {
+      width: 90%;
+      /* border: 3px solid #73AD21; */
+      margin: auto;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      height: 100px;
+      padding: 6px 6px 6px 6px;
+
+      font-size: 20pt;
+      /* background: linear-gradient(0deg, #DDD 0% , #DDD 60% , #555 100%) */
+    }
+
+    div.cl_poll>div.cl_poll_cell {
+      border: 3px solid #73AD21;
+      width: 25%;
+      margin: auto;1
+      margin-top: 10px;
+      margin-bottom: 10px;
+      height: 100px;
+      padding: 6px 6px 6px 6px;
+
+      border-radius: 15px;
+      text-align: center;
+      background: linear-gradient(180deg, #4cd5f8 0%, #4cd5f8 75%, #2cb5e8 100%);
+    }
+  </style>
+  <script type="text/javascript" src="js/main.js"></script>
+  <script type="text/javascript" src="js/jquery-2.1.4.min.js"></script>
+  <script type="text/javascript" src="js/robotutils.js"></script>
+  <script type="text/javascript" src="js/robotutils.1.0.js"></script>
+  <script type="text/javascript" src="js/robotutils_2.0.js"></script>
+</head>
+
+<body>
+  <div class="log">
+    <!-- sample layout -->
+    <div style="display:none;" class="chat_log cl_left">
+      <p class="rot">Rot</p>
+      <p class="msg">I did not hit her</p>
+    </div>
+
+  </div>
+
+</body>
+<!-- <script src="app_js/msg_log.js"></script> -->
+<script>
+  function rot_msgout(msg) {
+    var ap_msg = '<div class="chat_log cl_left"><p class="rot">Rot</p><p class="msg">' + msg + '</p></div>';
+    $('.log').append(ap_msg);
+    scrollToDown();
+  }
+
+  function user_msgout(msg) {
+    var ap_msg = '<div class="chat_log cl_right"><p class="user">User</p><p class="msg">' + msg + '</p></div>';
+    $('.log').append(ap_msg);
+    scrollToDown();
+  }
+
+  function scrollToDown() {
+    var doc = $(document).outerHeight(true);
+    window.scrollTo(0, doc);
+    console.log(doc + ':' + typeof doc);
+
+    // window.scrollTo(0, lc);
+
+  }
+
+  function rot_pollout(data_array) {
+    var head = '<div class="chat_log cl_poll">';
+    var end = '</div>';
+    var title_head = '<div class="cl_title"> <h3 class="title_msg">';
+    var title_end = '</h3></div>';
+    var cell_head = '<div class="cl_poll_cell"><p>';
+    var cell_end = '</p></div>';
+    var cell_val_1 = '<input value="';
+    var cell_val_3 = '"/>'
+    var all_temp = head + title_head + data_array.answer + title_end;
+    // array object
+    data_array.nodeData.quickReplies.forEach(function(element) {
+      console.log(element);
+      var node_temp = cell_head + element + cell_val_1 + element + cell_val_3 + cell_end;
+      all_temp += node_temp;
+      // p_c++;
+    });
+    all_temp += end;
+    $('.log').append(all_temp);
+  }
+
+  function poll_sendback(data) {
+    session.raiseEvent('Teks/NewWorldDev/clienttouch', data);
+  }
+
+  $('.cl_poll_cell').click(function() {
+    var data = $(this).children('p').children('input').value;
+    // var sendback_data = poll_sentback(data);
+    console.log(data);
+    $(this).parent('cl_poll').fadeOut();
+    user_msgout(data);
+  });
+
+  $(document).ready(function() {
+    // clientSay
+    session.subscribeToEvent("Teks/NewWorldDev/clientSay", function(data) {
+      var temp_data = JSON.parse(data);
+      temp_data.forEach(function(element) {
+        user_msgout(element.answer);
+      })
+    });
+
+    session.subscribeToEvent("Teks/NewWorldDev/serverSay", function(data) {
+      var temp_data = JSON.parse(data);
+      temp_data.forEach(function(element) {
+        if (element.nodeData != null || element.nodeData != 'null') {
+          rot_pollout(element);
+        } else {
+          rot_msgout(element.answer);
+        }
+      })
+    });
+
+  });
+</script>
+
+</html>
